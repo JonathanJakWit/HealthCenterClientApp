@@ -24,19 +24,27 @@ namespace HealthCenterClientApp
         {
             // Add a list of specialization of its doctors such as dentist, cardiologist, or
             //psychiatrists, and their visit cost
-            specializationRepository.GetSpecializationList().ForEach(x => { x.ToString(); });
+            //specializationRepository.GetSpecializationList().ForEach(x => { x.ToString(); });
 
+            Console.WriteLine("----------");
             Console.WriteLine("Which EmployeeNumber do you want to edit?: ");
             string? employNr = Console.ReadLine();
+            Console.WriteLine("----------");
+            Console.WriteLine("[1] - Dentist");
+            Console.WriteLine("[2] - Cardiologist");
+            Console.WriteLine("[3] - Psychiatrist");
+            Console.WriteLine("----------");
             Console.WriteLine("SpecializationId: ");
             string specialName = Console.ReadLine();
 
             doctorRepository.ChangeDoctorSpecialization(Convert.ToInt32(employNr), Convert.ToInt32(specialName));
 
-            //Doctor pogDoc = doctorRepository.GetDoctorWithSpecialization(Convert.ToInt32(employNr));
-            //Console.WriteLine(pogDoc.ToString());
-
-            Console.WriteLine("Op 1");
+            Doctor curDoctor = doctorRepository.GetDoctorFromEmployeeNumber(Convert.ToInt32(employNr));
+            Console.WriteLine("----------");
+            Console.WriteLine("Changed Doctor");
+            Console.WriteLine(curDoctor.ToString());
+            Console.WriteLine("----------");
+            Console.WriteLine("Press [Enter] To Continue...");
             Console.ReadLine();
         }
         static void AdminOption2()
@@ -44,9 +52,20 @@ namespace HealthCenterClientApp
             //Add the information about the health center’s doctors, including
             //employee number, full name, one specialization for each doctor, and
             //phone
+            Console.WriteLine("----------");
+            Console.WriteLine("First Name: ");
+            string firstName = Console.ReadLine();
+            Console.WriteLine("Last Name: ");
+            string lastName = Console.ReadLine();
+            Console.WriteLine("Specialization ID: ");
+            string specialId = Console.ReadLine();
+            Console.WriteLine("Phone Number: ");
+            string phoneNumber = Console.ReadLine();
+            Console.WriteLine("----------");
 
-            Console.WriteLine("Op 2");
-            Console.ReadLine();
+            doctorRepository.AddDoctor(firstName, lastName, Convert.ToInt32(specialId), phoneNumber);
+
+            Console.WriteLine("Successfully added new Doctor!");
         }
         static void AdminOption3()
         {
@@ -88,6 +107,7 @@ namespace HealthCenterClientApp
                     default:
                         break;
                 }
+                Console.WriteLine("Press [Enter] To Continue...");
                 Console.ReadLine();
                 Console.Clear();
             }
@@ -146,11 +166,10 @@ namespace HealthCenterClientApp
                     default:
                         break;
                 }
-                Console.ReadLine();
+                //Console.WriteLine("Press [Enter] To Continue...");
+                //Console.ReadLine();
                 Console.Clear();
             }
-
-            // Disconnect database
 
             // Exit program
         }

@@ -91,5 +91,41 @@ namespace HealthCenterClientApp.Data
                 }
             }
         }
+
+        public int GetNextEmployeeNumber(SqlConnection connection)
+        {
+            string countQuery = "SELECT COUNT(*) FROM Doctors";
+
+            using (var countCommand = new SqlCommand(countQuery, connection))
+            {
+                int employeeCount = (int)countCommand.ExecuteScalar();
+                return employeeCount + 1;
+            }
+        }
+
+        public void AddDoctor(string firstName, string lastName, int specializationId, string phoneNumber)
+        {
+            using (var connection = new SqlConnection(connectStr))
+            {
+                connection.Open();
+
+                // Get the current count of employees
+                int newEmployeeNumber = GetNextEmployeeNumber(connection);
+
+                // Add the doctor
+                string insertQuery = "INSERT INTO Doctors (EmployeeNumber, FirstName, LastName, SpecializationId, PhoneNumber) " +
+                                     "VALUES (@EmployeeNumber, @FirstName, @LastName, @SpecializationId, @PhoneNumber)";
+
+                using (var insertCommand = new SqlCommand(insertQuery, connection))
+                {
+                    insertCommand.Parameters.AddWithValue("@EmployeeNumber", newEmployeeNumber);
+                    insertCommand.Parameters.AddWithValue("@FirstName", firstName);
+                    insertCommand.Parameters.AddWithValue("@LastName", lastName);
+                    insertCommand.Parameters.AddWithValue("@SpecializationId", specializationId);
+                    insertCommand.Parameters.AddWithValue("@PhoneNumber", phoneNumber);
+                    insertCommand.ExecuteNonQuery();
+                }
+            }
+        }
     }
 }
