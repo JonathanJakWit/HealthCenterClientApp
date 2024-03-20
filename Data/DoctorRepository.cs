@@ -91,6 +91,24 @@ namespace HealthCenterClientApp.Data
                 }
             }
         }
+        
+        public void ChangeDoctorStatus(int employeeNumber, string statusDisplayString)
+        {
+            using (var connection = new SqlConnection(connectStr))
+            {
+                connection.Open();
+
+                // Update the doctor's status
+                string updateQuery = "UPDATE Doctors SET Status = @Status WHERE EmployeeNumber = @EmployeeNumber";
+
+                using (var updateCommand = new SqlCommand(updateQuery, connection))
+                {
+                    updateCommand.Parameters.AddWithValue("@Status", statusDisplayString);
+                    updateCommand.Parameters.AddWithValue("@EmployeeNumber", employeeNumber);
+                    updateCommand.ExecuteNonQuery();
+                }
+            }
+        }
 
         public int GetNextEmployeeNumber(SqlConnection connection)
         {
@@ -124,6 +142,76 @@ namespace HealthCenterClientApp.Data
                     insertCommand.Parameters.AddWithValue("@SpecializationId", specializationId);
                     insertCommand.Parameters.AddWithValue("@PhoneNumber", phoneNumber);
                     insertCommand.ExecuteNonQuery();
+                }
+
+                insertQuery = "INSERT INTO DoctorAvailability (DoctorEmployeeNumber) " +
+                              "VALUES (@DoctorEmployeeNumber)";
+
+                using (var insertCommand = new SqlCommand(insertQuery, connection))
+                {
+                    insertCommand.Parameters.AddWithValue("@DoctorEmployeeNumber", newEmployeeNumber);
+                    insertCommand.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void ChangeDoctorAvailability(int employeeNumber, AvailabilitySlot availabilitySlot, int bitValue) // 0 or 1 where 0 = FALSE and 1 = TRUE
+        {
+            using (var connection = new SqlConnection(connectStr))
+            {
+                connection.Open();
+
+                // Define which day and time (which column in the availability-table)
+                string updateQuery = "UPDATE DoctorAvailability SET ";
+                switch (availabilitySlot.WeekDay)
+                {
+                    case WeekDays.Monday:
+                        updateQuery += "Monday_";
+                        break;
+                    case WeekDays.Tuesday:
+                        updateQuery += "Tuesday_";
+                        break;
+                    case WeekDays.Wednesday:
+                        updateQuery += "Wednesday_";
+                        break;
+                    case WeekDays.Thursday:
+                        updateQuery += "Thursday_";
+                        break;
+                    case WeekDays.Friday:
+                        updateQuery += "Friday_";
+                        break;
+                    default:
+                        break;
+                }
+
+                switch (availabilitySlot.TimeSlot)
+                {
+                    case TimeSlots.Nine:
+                        updateQuery += "09_00";
+                        break;
+                    case TimeSlots.NineThirty:
+                        updateQuery += "09_30";
+                        break;
+                    case TimeSlots.Ten:
+                        updateQuery += "10_00";
+                        break;
+                    case TimeSlots.TenThirty:
+                        updateQuery += "10_30";
+                        break;
+                    default:
+                        break;
+                }
+
+                updateQuery += " = @AvailabilityStatus WHERE DoctorEmployeeNumber = @DoctorEmployeeNumber";
+
+                // Update the doctor's availability
+                //string updateQuery = "UPDATE Doctors SET Status = @Status WHERE EmployeeNumber = @EmployeeNumber";
+
+                using (var updateCommand = new SqlCommand(updateQuery, connection))
+                {
+                    updateCommand.Parameters.AddWithValue("@AvailabilityStatus", bitValue);
+                    updateCommand.Parameters.AddWithValue("@DoctorEmployeeNumber", employeeNumber);
+                    updateCommand.ExecuteNonQuery();
                 }
             }
         }
