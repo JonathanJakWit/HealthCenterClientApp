@@ -70,20 +70,123 @@ namespace HealthCenterClientApp.Data
             }
         }
 
-        //public List<Booking> GetDoctorBookings(int doctorEmployeeNumber)
-        //{
-        //    List<Booking> bookings = new List<Booking>();
+        public int GetNextBookingId()
+        {
+            int numberOfBookings = 0;
 
-        //    using (var connection = new SqlConnection(connectStr))
-        //    {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectStr))
+                {
+                    string query = "SELECT COUNT(*) FROM Bookings";
 
-        //    }
+                    SqlCommand command = new SqlCommand(query, connection);
 
-        //    return new List<Booking> { new Booking() }; // TEMP
-        //}
+                    connection.Open();
 
-        // Edit medical notes on booking (by doctor only)
+                    numberOfBookings = (int)command.ExecuteScalar();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+
+            return numberOfBookings + 1;
+        }
 
         // Add booking function
+        public void AddNewBooking(int doctorEmployeeId, int patientMedicalNumber, AvailabilitySlot timeSlot)
+        {
+            int bookingId = GetNextBookingId();
+
+            DateTime today = DateTime.Today;
+            DateTime nextMonday = today.AddDays((DayOfWeek.Monday + 7 - today.DayOfWeek) % 7);
+            DateTime nextTuesday = today.AddDays((DayOfWeek.Tuesday + 7 - today.DayOfWeek) % 7);
+            DateTime nextWednesday = today.AddDays((DayOfWeek.Wednesday + 7 - today.DayOfWeek) % 7);
+            DateTime nextThursday = today.AddDays((DayOfWeek.Thursday + 7 - today.DayOfWeek) % 7);
+            DateTime nextFriday = today.AddDays((DayOfWeek.Friday + 7 - today.DayOfWeek) % 7);
+
+            DateTime bookingDate = DateTime.Today;
+            switch (timeSlot.WeekDay)
+            {
+                case WeekDays.Monday:
+                    bookingDate = nextMonday;
+                    break;
+                case WeekDays.Tuesday:
+                    bookingDate = nextTuesday;
+                    break;
+                case WeekDays.Wednesday:
+                    bookingDate = nextWednesday;
+                    break;
+                case WeekDays.Thursday:
+                    bookingDate = nextThursday;
+                    break;
+                case WeekDays.Friday:
+                    bookingDate = nextFriday;
+                    break;
+                default:
+                    break;
+            }
+
+            switch (timeSlot.TimeSlot)
+            {
+                case TimeSlots.Nine:
+                    bookingDate = new DateTime(bookingDate.Year, bookingDate.Month, bookingDate.Day, 9, 0, 0);
+                    break;
+                case TimeSlots.NineThirty:
+                    bookingDate = new DateTime(bookingDate.Year, bookingDate.Month, bookingDate.Day, 9, 30, 0);
+                    break;
+                case TimeSlots.Ten:
+                    bookingDate = new DateTime(bookingDate.Year, bookingDate.Month, bookingDate.Day, 10, 0, 0);
+                    break;
+                case TimeSlots.TenThirty:
+                    bookingDate = new DateTime(bookingDate.Year, bookingDate.Month, bookingDate.Day, 10, 30, 0);
+                    break;
+                default:
+                    break;
+            }
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectStr))
+                {
+                    // SQL query to insert a new booking
+                    string query = @"
+                        INSERT INTO Bookings (BookingId, DateTime, MedicalNotes, DoctorEmployeeNumber, PatientMedicalNumber)
+                        VALUES (@BookingId, @DateTime, @MedicalNotes, @DoctorEmployeeNumber, @PatientMedicalNumber)";
+
+                    // Open the connection
+                    connection.Open();
+
+                    // Create a command
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        // Add parameters
+                        command.Parameters.AddWithValue("@BookingId", bookingId);
+                        command.Parameters.AddWithValue("@DateTime", bookingDate);
+                        command.Parameters.AddWithValue("@MedicalNotes", "");
+                        command.Parameters.AddWithValue("@DoctorEmployeeNumber", doctorEmployeeId);
+                        command.Parameters.AddWithValue("@PatientMedicalNumber", patientMedicalNumber);
+
+                        // Execute the command
+                        int rowsAffected = command.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+                        {
+                            Console.WriteLine("Booking inserted successfully.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Failed to insert booking.");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+        }
     }
 }

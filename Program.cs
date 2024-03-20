@@ -4,6 +4,7 @@ using System.Xml.Linq;
 using HealthCenterClientApp.Data;
 using HealthCenterClientApp.Models;
 using System.Data.SqlTypes;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HealthCenterClientApp
 {
@@ -117,8 +118,10 @@ namespace HealthCenterClientApp
                 Console.WriteLine("[1] - Add/Edit specialization and visit cost");
                 Console.WriteLine("[2] - Add doctor's information and or create new doctor");
                 Console.WriteLine("[3] - Delete doctor");
-                Console.WriteLine("[7] - See all patients and their total visit costs");
-                Console.WriteLine("[8] - Log out");
+                Console.WriteLine("[4] - See All Bookings");
+                Console.WriteLine("[5] - See All Medical Records of specific patient");
+                Console.WriteLine("[6] - See all patients and their total visit costs");
+                Console.WriteLine("[7] - Log out");
                 Console.WriteLine("-----");
 
                 Console.WriteLine("Option: ");
@@ -135,19 +138,31 @@ namespace HealthCenterClientApp
                         AdminOption3();
                         break;
                     case "4":
-                        // See all patients and their information
+                        // See all upcoming bookings
+                        Console.WriteLine("-----");
+                        int doctorCount = doctorRepository.GetDoctorCount();
+                        for (int i = 0; i < doctorCount; i++)
+                        {
+                            SeeDoctorBookings(i);
+                        }
+                        Console.WriteLine("-----");
+                        Console.ReadLine();
                         break;
                     case "5":
-                        // See all upcoming bookings
+                        // See list of all medical records of a specific patient
+                        Console.WriteLine("-----");
+                        Console.WriteLine("Enter patientId: ");
+                        string pickedPatientIdStr = Console.ReadLine();
+                        int pickedPatientId = int.Parse(pickedPatientIdStr);
+                        patientRepository.ShowMedicalNotesForPatient(pickedPatientId);
+                        Console.WriteLine("-----");
+                        Console.ReadLine();
                         break;
                     case "6":
-                        // See list of all medical records of a specific patient
-                        break;
-                    case "7":
-                        // See list of all patients including medical number and full name and sum of all vist costs
+                        // See list of all patients including medical number and full name and sum of all visit costs
                         SeeAllPatientsAndVisitCosts();
                         break;
-                    case "8":
+                    case "7":
                         adminLoggedIn = false;
                         break;
 
@@ -175,19 +190,7 @@ namespace HealthCenterClientApp
 
         static void SeeDoctorsPatients(int employeeNumber)
         {
-
-
-            //List<Booking> bookings = bookingRepository.GetDoctorBookings(employeeNumber);
-            //List<PatientWithMedicalHistory> patientsListWithMedicalHistory = new List<PatientWithMedicalHistory>();
-            //Dictionary<int, SqlDateTime> patientsApointmentDates = new Dictionary<int, SqlDateTime>();
-            //Dictionary<int, string> patientsMedicalHistories = new Dictionary<int, string>();
-            
-            //Console.WriteLine("-----");
-            //foreach (Booking booking in bookings)
-            //{
-            //    Console.WriteLine(booking.ToString());
-            //}
-            //Console.WriteLine("-----");
+            SeeDoctorBookings(employeeNumber);
         }
 
         static void ChangeDoctorAvailability(int employeeNumber)
@@ -351,6 +354,153 @@ namespace HealthCenterClientApp
         #region Patient
         static void HandleBookingAppointment(int patientMedicalNumber)
         {
+            // - Book an appointment to visit a doctor
+            // See list of doctors with specialization and visit cost
+            Console.WriteLine("-----");
+            doctorRepository.SeeSpecializationAndVisitCost();
+            Console.WriteLine("-----");
+            Console.ReadLine();
+
+            // Search for doctors with specific specialization
+            Console.WriteLine("-----");
+            Console.WriteLine("[1] - Dentist");
+            Console.WriteLine("[2] - Cardiologist");
+            Console.WriteLine("[3] - Psychiatrist");
+            Console.WriteLine("Which doctor-type do you want to see");
+            string _ = Console.ReadLine();
+            int specialId = int.Parse(_);
+            doctorRepository.SearchDoctorsWithSpecialization(specialId);
+            Console.ReadLine();
+            // Select doctor
+            Console.WriteLine("Enter DoctorID: ");
+            string doctorPickedIDStr = Console.ReadLine();
+            int doctorPickedID = int.Parse(doctorPickedIDStr);
+            Console.Clear();
+            // See the doctor's available times
+            Console.WriteLine("-----");
+            doctorRepository.ShowDoctorAvailability(doctorPickedID);
+            Console.WriteLine("-----");
+            Console.ReadLine();
+            // CAN ONLY BOOK IF FRIDAY. OTHERWISE SAY ITS ONLY AVAILABLE ON FRIDAYS
+            // Type "Adminpass" after error message then press enter to bypass restriction
+            // Pick an appointment time and book it
+            DateTime todaysDate = DateTime.Today;
+            if (todaysDate.DayOfWeek == DayOfWeek.Friday) // Isnt friday
+            {
+                AvailabilitySlot pickedTimeSlot = new AvailabilitySlot();
+                pickedTimeSlot.WeekDay = WeekDays.Monday;
+                pickedTimeSlot.TimeSlot = TimeSlots.Nine;
+
+                Console.WriteLine("Pick Day: ");
+                string dayPicked = Console.ReadLine();
+                switch (dayPicked)
+                {
+                    case "monday":
+                        pickedTimeSlot.WeekDay = WeekDays.Monday;
+                        break;
+                    case "tuesday":
+                        pickedTimeSlot.WeekDay = WeekDays.Tuesday;
+                        break;
+                    case "wednesday":
+                        pickedTimeSlot.WeekDay = WeekDays.Wednesday;
+                        break;
+                    case "thursday":
+                        pickedTimeSlot.WeekDay = WeekDays.Thursday;
+                        break;
+                    case "friday":
+                        pickedTimeSlot.WeekDay = WeekDays.Friday;
+                        break;
+
+                    default:
+                        break;
+                }
+
+                Console.WriteLine("Pick time (9-30): ");
+                string timePicked = Console.ReadLine();
+                switch (timePicked)
+                {
+                    case "9-0":
+                        pickedTimeSlot.TimeSlot = TimeSlots.Nine;
+                        break;
+                    case "9-30":
+                        pickedTimeSlot.TimeSlot = TimeSlots.NineThirty;
+                        break;
+                    case "10-0":
+                        pickedTimeSlot.TimeSlot = TimeSlots.Ten;
+                        break;
+                    case "10-30":
+                        pickedTimeSlot.TimeSlot = TimeSlots.TenThirty;
+                        break;
+
+                    default:
+                        break;
+                }
+
+                bookingRepository.AddNewBooking(doctorPickedID, patientMedicalNumber, pickedTimeSlot);
+                Console.WriteLine("Booking complete!");
+            }
+            else
+            {
+                Console.WriteLine("CAN ONLY BOOK ON FRIDAY'S");
+                _ = Console.ReadLine();
+                if (_ == "adminpass")
+                {
+                    // Bypass the friday restriction
+                    AvailabilitySlot pickedTimeSlot = new AvailabilitySlot();
+                    pickedTimeSlot.WeekDay = WeekDays.Monday;
+                    pickedTimeSlot.TimeSlot = TimeSlots.Nine;
+
+                    Console.WriteLine("Pick Day: ");
+                    string dayPicked = Console.ReadLine();
+                    switch (dayPicked)
+                    {
+                        case "monday":
+                            pickedTimeSlot.WeekDay = WeekDays.Monday;
+                            break;
+                        case "tuesday":
+                            pickedTimeSlot.WeekDay = WeekDays.Tuesday;
+                            break;
+                        case "wednesday":
+                            pickedTimeSlot.WeekDay = WeekDays.Wednesday;
+                            break;
+                        case "thursday":
+                            pickedTimeSlot.WeekDay = WeekDays.Thursday;
+                            break;
+                        case "friday":
+                            pickedTimeSlot.WeekDay = WeekDays.Friday;
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    Console.WriteLine("Pick time (9-30): ");
+                    string timePicked = Console.ReadLine();
+                    switch (timePicked)
+                    {
+                        case "9-0":
+                            pickedTimeSlot.TimeSlot = TimeSlots.Nine;
+                            break;
+                        case "9-30":
+                            pickedTimeSlot.TimeSlot = TimeSlots.NineThirty;
+                            break;
+                        case "10-0":
+                            pickedTimeSlot.TimeSlot = TimeSlots.Ten;
+                            break;
+                        case "10-30":
+                            pickedTimeSlot.TimeSlot = TimeSlots.TenThirty;
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    bookingRepository.AddNewBooking(doctorPickedID, patientMedicalNumber, pickedTimeSlot);
+                    Console.WriteLine("Booking complete!");
+
+                }
+            }
+            Console.ReadLine();
 
         }
 

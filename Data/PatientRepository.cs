@@ -9,9 +9,6 @@ namespace HealthCenterClientApp.Data
 {
     public class PatientRepository
     {
-        //string query = "SELECT \r\n    p.MedicalNumber,\r\n    p.FirstName, p.LastName,\r\n    SUM(s.VisitCost) AS TotalCost\r\nFROM \r\n    Bookings b\r\nLEFT JOIN \r\n    Doctors d ON b.DoctorEmployeeNumber = d.EmployeeNumber\r\nLEFT JOIN \r\n    Patients p ON b.PatientMedicalNumber = p.MedicalNumber\r\nLEFT JOIN \r\n    Specialization s ON d.SpecializationId = s.SpecializationId\r\nGROUP BY \r\n    p.MedicalNumber, p.FirstName, p.LastName;";
-
-
         private string connectStr;
 
         public PatientRepository(string connectionString)
@@ -92,6 +89,52 @@ namespace HealthCenterClientApp.Data
             }
 
             Console.ReadLine();
+        }
+
+        public void ShowMedicalNotesForPatient(int patientMedicalNumber)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectStr))
+                {
+                    string query = "SELECT MedicalNotes FROM Bookings WHERE PatientMedicalNumber = @PatientMedicalNumber";
+
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@PatientMedicalNumber", patientMedicalNumber);
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            List<string> medicalNotesList = new List<string>();
+
+                            while (reader.Read())
+                            {
+                                string medicalNotes = reader["MedicalNotes"] == DBNull.Value ? null : (string)reader["MedicalNotes"];
+                                medicalNotesList.Add(medicalNotes);
+                            }
+
+                            if (medicalNotesList.Count > 0)
+                            {
+                                Console.WriteLine($"Medical Notes for Patient with Medical Number {patientMedicalNumber}:");
+                                foreach (var medicalNotes in medicalNotesList)
+                                {
+                                    Console.WriteLine(medicalNotes);
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine($"No medical notes found for Patient with Medical Number {patientMedicalNumber}");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
         }
 
         public bool IsPatientRegistered(int medicalNumber)
@@ -189,7 +232,6 @@ namespace HealthCenterClientApp.Data
             int medicalNumberToUpdate = patientMedicalId;
             Console.WriteLine(medicalNumberToUpdate);
 
-            // Connect to the database
             using (SqlConnection connection = new SqlConnection(connectStr))
             {
                 connection.Open();
@@ -225,15 +267,14 @@ namespace HealthCenterClientApp.Data
 
                 // Update the patient's information in the database
                 string updateQuery = @"
-                            UPDATE Patients
-                            SET FirstName = @FirstName, LastName = @LastName, Gender = @Gender,
-                            City = @City, StateProvince = @StateProvince, Street = @Street,
-                            PostZipCode = @PostZipCode, Phone = @Phone, Birthday = @Birthday
-                            WHERE MedicalNumber = @MedicalNumberToUpdate";
+                    UPDATE Patients
+                    SET FirstName = @FirstName, LastName = @LastName, Gender = @Gender,
+                        City = @City, StateProvince = @StateProvince, Street = @Street,
+                        PostZipCode = @PostZipCode, Phone = @Phone, Birthday = @Birthday
+                        WHERE MedicalNumber = @MedicalNumberToUpdate";
 
                 using (SqlCommand updateCommand = new SqlCommand(updateQuery, connection))
                 {
-                    // Add parameters to the command
                     updateCommand.Parameters.AddWithValue("@MedicalNumberToUpdate", medicalNumberToUpdate);
                     updateCommand.Parameters.AddWithValue("@FirstName", firstName);
                     updateCommand.Parameters.AddWithValue("@LastName", lastName);
@@ -245,7 +286,6 @@ namespace HealthCenterClientApp.Data
                     updateCommand.Parameters.AddWithValue("@Phone", phone);
                     updateCommand.Parameters.AddWithValue("@Birthday", birthday);
 
-                    // Execute the command
                     int rowsAffected = updateCommand.ExecuteNonQuery();
 
                     if (rowsAffected > 0)
@@ -257,107 +297,7 @@ namespace HealthCenterClientApp.Data
                         Console.WriteLine("Failed to update patient information.");
                     }
                 }
-
-                //// Retrieve existing patient information based on the medical number
-                //string selectQuery = @"
-                //   SELECT MedicalNumber, FirstName, LastName, Gender, City, StateProvince, Street, PostZipCode, Phone, Birthday
-                //   FROM Patients
-                //   WHERE MedicalNumber = @MedicalNumberToUpdate";
-
-                //using (SqlCommand selectCommand = new SqlCommand(selectQuery, connection))
-                //{
-                //    selectCommand.Parameters.AddWithValue("@MedicalNumberToUpdate", medicalNumberToUpdate);
-
-                //    using (SqlDataReader reader = selectCommand.ExecuteReader())
-                //    {
-
-                //        if (reader.Read()) // Check if patient with the provided medical number exists
-                //        {
-                //            // Display existing patient information
-                //            Console.WriteLine("Existing patient information:");
-                //            Console.WriteLine($"Medical Number: {reader.GetInt32(0)}");
-                //            Console.WriteLine($"First Name: {reader.GetString(1)}");
-                //            Console.WriteLine($"Last Name: {reader.GetString(2)}");
-                //            Console.WriteLine($"Gender: {reader.GetString(3)}");
-                //            Console.WriteLine($"City: {reader.GetString(4)}");
-                //            Console.WriteLine($"State/Province: {reader.GetString(5)}");
-                //            Console.WriteLine($"Street: {reader.GetString(6)}");
-                //            Console.WriteLine($"Post Zip Code: {reader.GetString(7)}");
-                //            Console.WriteLine($"Phone: {reader.GetString(8)}");
-                //            Console.WriteLine($"Birthday: {reader.GetDateTime(9)}");
-
-                //            Console.WriteLine("Enter new information for the patient:");
-
-                //            Console.Write("First Name: ");
-                //            string firstName = Console.ReadLine();
-
-                //            Console.Write("Last Name: ");
-                //            string lastName = Console.ReadLine();
-
-                //            Console.Write("Gender (M/F): ");
-                //            char gender = char.Parse(Console.ReadLine());
-
-                //            Console.Write("City: ");
-                //            string city = Console.ReadLine();
-
-                //            Console.Write("State/Province: ");
-                //            string stateProvince = Console.ReadLine();
-
-                //            Console.Write("Street: ");
-                //            string street = Console.ReadLine();
-
-                //            Console.Write("Post Zip Code: ");
-                //            string postZipCode = Console.ReadLine();
-
-                //            Console.Write("Phone: ");
-                //            string phone = Console.ReadLine();
-
-                //            Console.Write("Birthday (YYYY-MM-DD): ");
-                //            DateTime birthday = DateTime.Parse(Console.ReadLine());
-
-                //            // Update the patient's information in the database
-                //            string updateQuery = @"
-                //            UPDATE Patients
-                //            SET FirstName = @FirstName, LastName = @LastName, Gender = @Gender,
-                //            City = @City, StateProvince = @StateProvince, Street = @Street,
-                //            PostZipCode = @PostZipCode, Phone = @Phone, Birthday = @Birthday
-                //            WHERE MedicalNumber = @MedicalNumberToUpdate";
-
-                //            using (SqlCommand updateCommand = new SqlCommand(updateQuery, connection))
-                //            {
-                //                // Add parameters to the command
-                //                updateCommand.Parameters.AddWithValue("@MedicalNumberToUpdate", medicalNumberToUpdate);
-                //                updateCommand.Parameters.AddWithValue("@FirstName", firstName);
-                //                updateCommand.Parameters.AddWithValue("@LastName", lastName);
-                //                updateCommand.Parameters.AddWithValue("@Gender", gender);
-                //                updateCommand.Parameters.AddWithValue("@City", city);
-                //                updateCommand.Parameters.AddWithValue("@StateProvince", stateProvince);
-                //                updateCommand.Parameters.AddWithValue("@Street", street);
-                //                updateCommand.Parameters.AddWithValue("@PostZipCode", postZipCode);
-                //                updateCommand.Parameters.AddWithValue("@Phone", phone);
-                //                updateCommand.Parameters.AddWithValue("@Birthday", birthday);
-
-                //                // Execute the command
-                //                int rowsAffected = updateCommand.ExecuteNonQuery();
-
-                //                if (rowsAffected > 0)
-                //                {
-                //                    Console.WriteLine("Patient information updated successfully.");
-                //                }
-                //                else
-                //                {
-                //                    Console.WriteLine("Failed to update patient information.");
-                //                }
-                //            }
-                //        }
-                //        else
-                //        {
-                //            Console.WriteLine("No patient found with the provided medical number.");
-                //        }
-                    //}
-                //}
             }
-
             Console.ReadLine();
         }
     }
